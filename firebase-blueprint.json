@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "PaymentRecord": {
+      "title": "Payment Record",
+      "description": "Details of a monthly subscription payment",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "date": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "Cash",
+            "Online"
+          ]
+        },
+        "forMonth": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "amount",
+        "date",
+        "mode",
+        "forMonth"
+      ]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "A standard library student document containing membership, table assignment, fees and history",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who manages this student"
+        },
+        "name": {
+          "type": "string"
+        },
+        "mobile": {
+          "type": "string"
+        },
+        "tableNumber": {
+          "type": "number"
+        },
+        "joiningDate": {
+          "type": "string"
+        },
+        "monthlyFee": {
+          "type": "number"
+        },
+        "lastPaidDate": {
+          "type": "string"
+        },
+        "nextDueDate": {
+          "type": "string"
+        },
+        "paymentHistory": {
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "mobile",
+        "tableNumber",
+        "joiningDate",
+        "monthlyFee",
+        "nextDueDate"
+      ]
+    },
+    "DeletedStudent": {
+      "title": "Deleted Student",
+      "description": "Archived student document for transaction audits containing minimal required details, auto-removed after 60 days via TTL",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "n": { "type": "string", "description": "Student Name (compact)" },
+        "t": { "type": "number", "description": "Table Number (compact)" },
+        "p": {
+          "type": "array",
+          "description": "Compact Payment History for the last 2 months"
+        },
+        "deletedAt": { "type": "string", "format": "date-time" },
+        "expireAt": { "type": "string", "format": "date-time", "description": "Firestore TTL timestamp set to 60 days from deletion" }
+      },
+      "required": ["id", "userId", "n", "t", "p", "deletedAt", "expireAt"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "The collection storing study lab subscribers"
+    },
+    "/deleted_students/{studentId}": {
+      "schema": "DeletedStudent",
+      "description": "Collection of deleted students, optimized for Spark plan with TTL"
+    }
+  }
+}

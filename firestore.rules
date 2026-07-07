@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Input data shorthand
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. Validation Blueprint for Student Document
+    function isValidStudent(data) {
+      return data.keys().hasAll(['id', 'name', 'mobile', 'tableNumber', 'joiningDate', 'monthlyFee', 'nextDueDate']) 
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 256
+        && data.mobile is string && data.mobile.size() <= 32
+        && data.tableNumber is number
+        && data.joiningDate is string && data.joiningDate.size() <= 64
+        && data.monthlyFee is number
+        && data.nextDueDate is string && data.nextDueDate.size() <= 64
+        && (!data.keys().contains('lastPaidDate') || data.lastPaidDate == null || (data.lastPaidDate is string && data.lastPaidDate.size() <= 64))
+        && (!data.keys().contains('paymentHistory') || data.paymentHistory is list)
+        && (!data.keys().contains('userId') || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    // Validation Blueprint for DeletedStudent Document
+    function isValidDeletedStudent(data) {
+      return data.keys().hasAll(['id', 'n', 't', 'p', 'deletedAt', 'expireAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.n is string && data.n.size() <= 256
+        && data.t is number
+        && data.p is list
+        && data.deletedAt is timestamp
+        && data.expireAt is timestamp
+        && (!data.keys().contains('userId') || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    // 4. Students Collection Rules
+    match /students/{studentId} {
+      // Create conditions
+      allow create: if isValidId(studentId) 
+        && isValidStudent(incoming());
+
+      // Read single document
+      allow get: if true;
+
+      // Query list of documents
+      allow list: if true;
+
+      // Update conditions
+      allow update: if isValidStudent(incoming()) 
+        && incoming().id == existing().id; // ID immutability rule
+
+      // Delete conditions
+      allow delete: if true;
+    }
+
+    // 5. Deleted Students Collection Rules
+    match /deleted_students/{studentId} {
+      allow create: if isValidId(studentId)
+        && isValidDeletedStudent(incoming());
+
+      allow get: if true;
+
+      allow list: if true;
+
+      allow update: if false; // Immutable after archiving
+
+      allow delete: if true;
+    }
+  }
+}

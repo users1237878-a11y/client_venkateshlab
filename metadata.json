@@ -1,0 +1,6 @@
+{
+  "name": "SHRI VENKATESH LIBRARY",
+  "description": "A mobile-optimized study lab management system for SHRI VENKATESH LIBRARY, developed by Atheron Labs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
